@@ -1,137 +1,86 @@
-const matches = [
-  {
-    sport: 'soccer',
-    participant1: 'Chelsea',
-    participant2: 'Arsenal',
-    score: '2:1',
-  },
-  {
-    sport: 'volleyball',
-    participant1: 'Germany',
-    participant2: 'France',
-    score: '3:0,25:23,25:19,25:21',
-  },
-  {
-    sport: 'handball',
-    participant1: 'Pogoń Szczeciń',
-    participant2: 'Azoty Puławy',
-    score: '34:26',
-  },
-  {
-    sport: 'basketball',
-    participant1: 'GKS Tychy',
-    participant2: 'GKS Katowice',
-    score: [
-      ['9:7', '2:1'],
-      ['5:3', '9:9'],
-    ],
-  },
-  {
-    sport: 'tennis',
-    participant1: 'Maria Sharapova',
-    participant2: 'Serena Williams',
-    score: '2:1,7:6,6:3,6:7',
-  },
-  {
-    sport: 'ski jumping',
-  },
-];
+import { matches } from './data/matches';
+
+type Match = {
+  sport: string;
+  participant1?: string;
+  participant2?: string;
+  score?: string | string[][];
+};
+
+type MatchesParsed = {
+  name: string;
+  score: string;
+};
+
+enum MatchSport {
+  Soccer = 'soccer',
+  Volleyball = 'volleyball',
+  Basketball = 'basketball',
+  Tennis = 'tennis',
+  Handball = 'handball',
+}
+
+const exception = 'Exception: invalid sport';
 
 class EventParser {
-  makeEventName(match) {
-    if (match.sport === 'soccer') {
-      return match.participant1 + ' - ' + match.participant2;
-    } else if (match.sport === 'tennis') {
-      return match.participant1 + ' vs ' + match.participant2;
-    } else if (match.sport === 'volleyball') {
-      return match.participant1 + ' - ' + match.participant2;
-    } else if (match.sport === 'handball') {
-      return match.participant1 + ' vs ' + match.participant2;
-    } else if (match.sport === 'basketball') {
-      return match.participant1 + ' - ' + match.participant2;
+  makeEventName(match: Match): string {
+    if (
+      match.sport === MatchSport.Soccer ||
+      match.sport === MatchSport.Volleyball ||
+      match.sport === MatchSport.Basketball
+    ) {
+      return `${match.participant1} - ${match.participant2}`;
+    } else if (
+      match.sport === MatchSport.Tennis ||
+      match.sport === MatchSport.Handball
+    ) {
+      return `${match.participant1} vs ${match.participant2}`;
     } else {
-      return 'Exception: invalid sport';
+      return exception;
     }
   }
 
-  formatScore(match) {
-    if (match.sport === 'soccer') {
+  formatScore(match: Match): string {
+    if (
+      (match.sport === MatchSport.Soccer ||
+        match.sport === MatchSport.Handball) &&
+      typeof match.score === 'string'
+    ) {
       return match.score;
-    } else if (match.sport === 'tennis') {
-      var scores =
-        /([0-9]+\:[0-9]+),([0-9]+\:[0-9]+),([0-9]+\:[0-9]+),([0-9]+\:[0-9]+)/.exec(
+    } else if (
+      (match.sport === MatchSport.Tennis ||
+        match.sport === MatchSport.Volleyball) &&
+      typeof match.score === 'string'
+    ) {
+      const scores =
+        /([0-9]+:[0-9]+),([0-9]+:[0-9]+),([0-9]+:[0-9]+),([0-9]+:[0-9]+)/.exec(
           match.score
         );
-      var set1 = scores[2];
-      var set2 = scores[3];
-      var set3 = scores[4];
 
-      return (
-        'Main score: ' +
-        scores[1] +
-        ' (' +
-        'set1 ' +
-        set1 +
-        ', ' +
-        'set2 ' +
-        set2 +
-        ', ' +
-        'set3 ' +
-        set3 +
-        ')'
-      );
-    } else if (match.sport === 'volleyball') {
-      var scores =
-        /([0-9]+\:[0-9]+),([0-9]+\:[0-9]+),([0-9]+\:[0-9]+),([0-9]+\:[0-9]+)/.exec(
-          match.score
-        );
-      var set1 = scores[2];
-      var set2 = scores[3];
-      var set3 = scores[4];
+      const set1 = scores?.[2]?.replace(/:/g, ':');
+      const set2 = scores?.[3]?.replace(/:/g, ':');
+      const set3 = scores?.[4]?.replace(/:/g, ':');
 
-      return (
-        'Main score: ' +
-        scores[1] +
-        ' (' +
-        'set1 ' +
-        set1 +
-        ', ' +
-        'set2 ' +
-        set2 +
-        ', ' +
-        'set3 ' +
-        set3 +
-        ')'
-      );
-    } else if (match.sport === 'basketball') {
-      return (
-        match.score[0][0] +
-        ',' +
-        match.score[0][1] +
-        ',' +
-        match.score[1][0] +
-        ',' +
-        match.score[1][1]
-      );
-    } else if (match.sport === 'handball') {
-      return match.score;
+      return `Main score: ${scores?.[1]} (set1 ${set1}, set2 ${set2}, set3 ${set3})`;
+    } else if (
+      match.sport === MatchSport.Basketball &&
+      Array.isArray(match.score)
+    ) {
+      return match.score.map((v: string[]) => v.join(',')).join(',');
     } else {
-      return 'Exception: invalid sport';
+      return exception;
     }
   }
 }
 
-const matchesParsed = [];
+const matchesParsed: MatchesParsed[] = [];
 
 for (let i = 0; i < matches.length; i++) {
   const parser = new EventParser();
   const name = parser.makeEventName(matches[i]);
   const score = parser.formatScore(matches[i]);
 
-  if (
-    name !== 'Exception: invalid sport' &&
-    score !== 'Exception: invalid sport'
-  ) {
+  if (name !== exception && score !== exception) {
     matchesParsed.push({
       name,
       score,
